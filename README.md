@@ -12,3 +12,5 @@ zookeeper 3.4.9
 jsoncpp 0.10.5   
 tinyxml 2.6.2   
 hiredis 0.13.3   
+
+zeroc-ice 3.6.4

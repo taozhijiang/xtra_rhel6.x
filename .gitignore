@@ -1,1 +1,5 @@
 .DS_Store
+bin/debug/zeroc-ice/
+bin/release/zeroc-ice/
+libs/debug/zeroc-ice/
+libs/release/zeroc-ice/
