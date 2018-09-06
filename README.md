@@ -14,3 +14,9 @@ tinyxml 2.6.2
 hiredis 0.13.3   
 
 zeroc-ice 3.6.4
+
+cryptopp 5.6.1
+leveldb 1.2.0
+protobuf 2.5.0
+
+curl 7.53.1
