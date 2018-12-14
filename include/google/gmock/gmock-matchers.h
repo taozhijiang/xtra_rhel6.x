@@ -979,11 +979,7 @@ class IsNullMatcher {
   template <typename Pointer>
   bool MatchAndExplain(const Pointer& p,
                        MatchResultListener* /* listener */) const {
-#if GTEST_LANG_CXX11
-    return p == nullptr;
-#else  // GTEST_LANG_CXX11
     return GetRawPointer(p) == NULL;
-#endif  // GTEST_LANG_CXX11
   }
 
   void DescribeTo(::std::ostream* os) const { *os << "is NULL"; }
@@ -999,11 +995,7 @@ class NotNullMatcher {
   template <typename Pointer>
   bool MatchAndExplain(const Pointer& p,
                        MatchResultListener* /* listener */) const {
-#if GTEST_LANG_CXX11
-    return p != nullptr;
-#else  // GTEST_LANG_CXX11
     return GetRawPointer(p) != NULL;
-#endif  // GTEST_LANG_CXX11
   }
 
   void DescribeTo(::std::ostream* os) const { *os << "isn't NULL"; }
@@ -1548,6 +1540,12 @@ class BothOfMatcherImpl : public MatcherInterface<T> {
 };
 
 #if GTEST_LANG_CXX11
+
+// Skip variadic implementation of matchers if using GCC < 4.7 due to
+// Bug 35722 -[C++0x] Variadic templates expansion into non-variadic class template
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=35722
+#if !defined(__GNUC__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7 ) )
+
 // MatcherList provides mechanisms for storing a variable number of matchers in
 // a list structure (ListType) and creating a combining matcher from such a
 // list.
@@ -1630,6 +1628,7 @@ class VariadicMatcher {
 template <typename... Args>
 using AllOfMatcher = VariadicMatcher<BothOfMatcherImpl, Args...>;
 
+#endif  // GCC >= 4.7
 #endif  // GTEST_LANG_CXX11
 
 // Used for implementing the AllOf(m_1, ..., m_n) matcher, which
@@ -1720,10 +1719,17 @@ class EitherOfMatcherImpl : public MatcherInterface<T> {
 };
 
 #if GTEST_LANG_CXX11
+
+// Skip variadic implementation of matchers if using GCC < 4.7 due to
+// Bug 35722 -[C++0x] Variadic templates expansion into non-variadic class template
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=35722
+#if !defined(__GNUC__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7 ) )
+
 // AnyOfMatcher is used for the variadic implementation of AnyOf(m_1, m_2, ...).
 template <typename... Args>
 using AnyOfMatcher = VariadicMatcher<EitherOfMatcherImpl, Args...>;
 
+#endif  // GCC >= 4.7
 #endif  // GTEST_LANG_CXX11
 
 // Used for implementing the AnyOf(m_1, ..., m_n) matcher, which
@@ -4357,6 +4363,12 @@ inline bool ExplainMatchResult(
 }
 
 #if GTEST_LANG_CXX11
+
+// Skip variadic implementation of matchers if using GCC < 4.7 due to
+// Bug 35722 -[C++0x] Variadic templates expansion into non-variadic class template
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=35722
+#if !defined(__GNUC__) || (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7 ) )
+
 // Define variadic matcher versions. They are overloaded in
 // gmock-generated-matchers.h for the cases supported by pre C++11 compilers.
 template <typename... Args>
@@ -4369,6 +4381,7 @@ inline internal::AnyOfMatcher<Args...> AnyOf(const Args&... matchers) {
   return internal::AnyOfMatcher<Args...>(matchers...);
 }
 
+#endif  // GCC >= 4.7
 #endif  // GTEST_LANG_CXX11
 
 // AllArgs(m) is a synonym of m.  This is useful in

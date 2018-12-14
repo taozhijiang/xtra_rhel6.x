@@ -1330,7 +1330,8 @@ inline void LogAtLevel(int const severity, std::string const &msg) {
 //     : x_(CHECK_NOTNULL(MethodReturningUniquePtr())) {}
 template <typename T>
 T CheckNotNull(const char* file, int line, const char* names, T&& t) {
- if (t == nullptr) {
+// if (t == nullptr) {
+ if (t == NULL) {
    LogMessageFatal(file, line, new std::string(names));
  }
  return std::forward<T>(t);

@@ -628,7 +628,10 @@ class ReturnNullAction {
   template <typename Result, typename ArgumentTuple>
   static Result Perform(const ArgumentTuple&) {
 #if GTEST_LANG_CXX11
-    return nullptr;
+//    return nullptr;
+    GTEST_COMPILE_ASSERT_(internal::is_pointer<Result>::value,
+                          ReturnNull_can_be_used_to_return_a_pointer_only);
+    return NULL;
 #else
     GTEST_COMPILE_ASSERT_(internal::is_pointer<Result>::value,
                           ReturnNull_can_be_used_to_return_a_pointer_only);
