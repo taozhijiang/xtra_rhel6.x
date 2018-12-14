@@ -21,6 +21,7 @@ add_executable( test ${SCAFFOLD_SRCS} )
 
 
 set (EXTRA_LIBS ${EXTRA_LIBS} glogt )
+set (EXTRA_LIBS ${EXTRA_LIBS} tinyxml )
 set (EXTRA_LIBS ${EXTRA_LIBS} pthread gtest gmock)
 target_link_libraries( test -lrt -rdynamic -ldl
     ${EXTRA_LIBS}
