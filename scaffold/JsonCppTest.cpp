@@ -9,6 +9,7 @@
 
 using namespace ::testing;
 
+// refer: https://en.wikibooks.org/wiki/JsonCpp  
 
 TEST(JsonCpp, ParseTest) {
 
@@ -93,6 +94,37 @@ TEST(JsonCpp, BuildTest) {
 	
 	ASSERT_THAT(strJson.size() > 20, Eq(true));
 	ASSERT_THAT(strJson.find("zhijiang") != std::string::npos, Eq(true));
+	std::cout << "Final Marshal Json: " << strJson << std::endl;
+
+	Json::FastWriter style_writer;
+	std::string strStyleJson = style_writer.write(root);
 	
+	ASSERT_THAT(strStyleJson.size() > 20, Eq(true));
+	ASSERT_THAT(strStyleJson.find("zhijiang") != std::string::npos, Eq(true));
+	std::cout << "Final Marshal Json with Style: " << strStyleJson << std::endl;
+}
+
+TEST(JsonCpp, ObjectArrayTest) {
+
+	Json::Value root;
+	
+	root["info"] = "person infos";
+	root["count"] = 4;
+
+    Json::Value details;
+    details[0]["name"] = "tao";
+    details[0]["age"]  = 30;
+    details[3]["name"] = "kan";
+    details[3]["age"] = 1;
+    root["details"] = details;
+
+	ASSERT_THAT(details.size() == 4, Eq(true));
+	ASSERT_THAT(details[1].isNull(), Eq(true));
+
+	Json::FastWriter fast_writer;
+	std::string strJson = fast_writer.write(root);
+	
+	ASSERT_THAT(strJson.size() > 20, Eq(true));
+	ASSERT_THAT(strJson.find("details") != std::string::npos, Eq(true));
 	std::cout << "Final Marshal Json: " << strJson << std::endl;
 }
