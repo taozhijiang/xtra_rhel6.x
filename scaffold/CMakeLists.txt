@@ -13,6 +13,7 @@ link_directories( /usr/lib64/mysql/
         ${PROJECT_SOURCE_DIR}/../libs/
         ${PROJECT_SOURCE_DIR}/../libs/boost/
         ${PROJECT_SOURCE_DIR}/../libs/google/
+        ${PROJECT_SOURCE_DIR}/../libs/leveldb/
         ${PROJECT_SOURCE_DIR}/../libs
 )
 
@@ -22,6 +23,8 @@ add_executable( test ${SCAFFOLD_SRCS} )
 
 set (EXTRA_LIBS ${EXTRA_LIBS} glogt )
 set (EXTRA_LIBS ${EXTRA_LIBS} tinyxml )
+set (EXTRA_LIBS ${EXTRA_LIBS} jsoncpp )
+set (EXTRA_LIBS ${EXTRA_LIBS} leveldb snappy )
 set (EXTRA_LIBS ${EXTRA_LIBS} pthread gtest gmock)
 target_link_libraries( test -lrt -rdynamic -ldl
     ${EXTRA_LIBS}

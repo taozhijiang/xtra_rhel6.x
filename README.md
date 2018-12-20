@@ -23,5 +23,7 @@ curl            7.53.1
 
 glog            0.3.5
 gtest,gmock     1.8.1
+gflags          2.2.2
+snappy          1.1.7
 
 cpputest        3.8
