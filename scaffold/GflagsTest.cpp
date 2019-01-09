@@ -5,8 +5,14 @@
 
 using namespace ::testing;
 
-// refer: http://rpg.ifi.uzh.ch/docs/glog.html
+// refer: https://gflags.github.io/gflags/
 
+// DEFINE_bool: boolean
+// DEFINE_int32: 32-bit integer
+// DEFINE_int64: 64-bit integer
+// DEFINE_uint64: unsigned 64-bit integer
+// DEFINE_double: double
+// DEFINE_string: C++ string
 
 TEST(GFlags, DemoTest) {
 
