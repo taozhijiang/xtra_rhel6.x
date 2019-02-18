@@ -18,4 +18,7 @@ typedef std::weak_ptr<ip::tcp::socket>      SocketWeakPtr;
 typedef boost::asio::posix::stream_descriptor asio_fd;
 typedef std::shared_ptr<boost::asio::posix::stream_descriptor> asio_fd_shared_ptr;
 
+#include <boost/chrono.hpp>
+#include <boost/asio/steady_timer.hpp>
+
 #endif  //__TZ_XTRA_ASIO_H__
