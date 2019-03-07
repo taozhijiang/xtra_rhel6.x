@@ -16,4 +16,5 @@ bash autogen.sh
 ### thrift 
 ./configure --enable-shared=no --with-boost=/home/nicol/workDir/Incubator/xtra_rhel6.x/ --with-boost-libdir=/home/nicol/workDir/Incubator/xtra_rhel6.x/libs/debug/boost/ --without-php  --without-python --without-erlang
 
-
+### curl
+./configure --disable-shared --enable-static  --disable-symbol-hiding
