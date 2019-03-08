@@ -6,8 +6,8 @@
  */
 
 
-#ifndef __TZ_XTRA_RHEL6x_H__
-#define __TZ_XTRA_RHEL6x_H__
+#ifndef __XTRA_RHEL6x_H__
+#define __XTRA_RHEL6x_H__
 
 // General GNU
 #ifdef __GNUC__
@@ -18,7 +18,7 @@
 #define unlikely(x)     (x)
 #endif
 
-#if __cplusplus > 201103L
+#if __cplusplus >= 201103L
 // language _built_in_ support
 #else
 #define override
@@ -38,12 +38,6 @@
 #endif
 #define SAFE_ASSERT(expr) BOOST_ASSERT(expr)
 
-// Impl your assert handler like this ...
-// namespace boost {
-// void assertion_failed(char const * expr, char const * function, char const * file, long line) {
-//     log_err("BAD!!! expr `%s` assert failed at %s(%ld): %s", expr, file, line, function);
-// }
-// } // end boost
 
 
 #include <iostream>
@@ -53,19 +47,28 @@ using std::endl;
 
 #include <string>
 using std::string;
-#include <vector>
 
 #include <cstdint>         // int64_t ...
 #include <linux/limits.h>  // PATH_MAX
 
-#include <memory>          // SmartPointer
 
+#include <vector>
+#include <memory> 
 #include <mutex>
 #include <boost/thread/shared_mutex.hpp>
 
 #include <functional>      // bind
 
-#include <boost/noncopyable.hpp>
+
+#if __cplusplus >= 201103L
+#include <chrono>
+using std::chrono::milliseconds;
+using std::chrono::seconds;
+#else
+#include <boost/chrono.hpp>
+using boost::chrono::milliseconds;
+using boost::chrono::seconds;
+#endif
 
 #ifndef _XTRA_DEFINE_GET_POINTER_MARKER_
 #define _XTRA_DEFINE_GET_POINTER_MARKER_
@@ -75,4 +78,4 @@ T * get_pointer(std::shared_ptr<T> const& p) {
 }
 #endif // _XTRA_DEFINE_GET_POINTER_MARKER_
 
-#endif //__TZ_XTRA_RHTL6x_H__
+#endif //__XTRA_RHTL6x_H__
