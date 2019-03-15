@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2018 TAO Zhijiang<taozhijiang@gmail.com>
+ * Copyright (c) 2018-2019 TAO Zhijiang<taozhijiang@gmail.com>
  *
  * Licensed under the BSD-3-Clause license, see LICENSE for full information.
  *
@@ -55,6 +55,14 @@ using std::string;
 #include <vector>
 #include <memory> 
 #include <mutex>
+
+
+// or will get unique_future
+#define BOOST_THREAD_PROVIDES_FUTURE
+#define BOOST_THREAD_PROVIDES_FUTURE_CONTINUATION
+#define BOOST_THREAD_PROVIDES_FUTURE_WHEN_ALL_WHEN_ANY
+
+#include <boost/thread.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
 #include <functional>      // bind
