@@ -86,4 +86,7 @@ T * get_pointer(std::shared_ptr<T> const& p) {
 }
 #endif // _XTRA_DEFINE_GET_POINTER_MARKER_
 
+template <typename T>
+inline void ignore_unused(T const&) {}
+
 #endif //__XTRA_RHTL6x_H__

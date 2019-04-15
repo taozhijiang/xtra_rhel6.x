@@ -21,7 +21,7 @@ aux_source_directory( ./ SCAFFOLD_SRCS )
 add_executable( test ${SCAFFOLD_SRCS} )
 
 
-set (EXTRA_LIBS ${EXTRA_LIBS} glogt )
+set (EXTRA_LIBS ${EXTRA_LIBS} glog_syslog )
 set (EXTRA_LIBS ${EXTRA_LIBS} tinyxml )
 set (EXTRA_LIBS ${EXTRA_LIBS} jsoncpp )
 set (EXTRA_LIBS ${EXTRA_LIBS} leveldb snappy )

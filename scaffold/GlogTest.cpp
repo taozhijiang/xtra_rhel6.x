@@ -2,7 +2,7 @@
 #include <string>
 #include <memory>
 
-#include <glog/logging.h>
+#include <glog_syslog/logging.h>
 #include<pthread.h>
 
 #include <syslog.h>
@@ -88,7 +88,8 @@ TEST(GLog, CheckTest) {
     CHECK_EQ("nicol", str) << "bad, str is \"nicol\"";
 
     std::shared_ptr<int> ptr = std::make_shared<int>(200);
-    CHECK_NOTNULL(ptr);
+    // glog googletest.h polluted this ...
+    //CHECK_NOTNULL(ptr);
 
     const char* name = "nicol";
     CHECK_STRCASEEQ("NIcol", name) << "bad, incase equel for nicol";
@@ -106,6 +107,17 @@ TEST(GLog, PerrorTest) {
 // need to modified source, for facility change
 TEST(GLog, SyslogTest) {
     
-
+    FLAGS_syslog_facility = LOG_LOCAL6;
+    
     SYSLOG(INFO) << "good, this is message to syslog, but from glog ";
+}
+
+
+TEST(GLog, SyslogWithLogTest) {
+    
+    FLAGS_syslog_facility = LOG_LOCAL6;
+    
+    LOG(INFO) << "good, this is usually info, but also to rsyslog from glog";
+    LOG(WARNING) << "warning info here";
+    LOG(ERROR)  << "haha, error info here!";
 }
