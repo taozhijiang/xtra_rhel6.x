@@ -25,3 +25,7 @@ gflags          2.2.2
 snappy          1.1.7   
 
 cpputest        3.8   
+
+libconfig       1.3.2   
+librabbitmq     0.5.2   
+libiconv        1.15
