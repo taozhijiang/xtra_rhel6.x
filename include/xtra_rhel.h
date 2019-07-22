@@ -18,9 +18,7 @@
 //
 
 
-#if __cplusplus >= 201103L
-// language standard _built_in_ support
-#else
+#if __cplusplus < 201103L
 #define override
 #define nullptr (void*)0
 #define noexcept throw()
@@ -103,4 +101,7 @@ inline void ignore_unused(T const&) {}
 #define __auto_lock__(lock_name) \
     std::lock_guard<std::mutex> __lock_##__FILE__##__LINE__ (lock_name);
 
-#endif //__XTRA_RHTL6x_H__
+// define these for RHEL-6.x
+#define __XTRA_RHEL_VERSION__ 6
+
+#endif //__XTRA_RHEL6x_H__

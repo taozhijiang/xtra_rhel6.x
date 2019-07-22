@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
    libconfig - A library for processing structured configuration files
-   Copyright (C) 2005-2009  Mark A Lindner
+   Copyright (C) 2005-2018  Mark A Lindner
 
    This file is part of libconfig.
 
@@ -24,400 +24,554 @@
 #define __libconfig_hpp
 
 #include <stdio.h>
+#include <exception>
 #include <string>
-#include <map>
 
-namespace libconfig
+#if defined(__GNUC__)
+#include <cstdint>
+#endif /* __GNUC__ */
+
+
+#if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
+#if defined(LIBCONFIGXX_STATIC)
+#define LIBCONFIGXX_API
+#elif defined(LIBCONFIGXX_EXPORTS)
+#define LIBCONFIGXX_API __declspec(dllexport)
+#else /* ! LIBCONFIGXX_EXPORTS */
+#define LIBCONFIGXX_API __declspec(dllimport)
+#endif /* LIBCONFIGXX_STATIC */
+#else /* ! WIN32 */
+#define LIBCONFIGXX_API
+#endif /* WIN32 */
+
+#define LIBCONFIGXX_VER_MAJOR    1
+#define LIBCONFIGXX_VER_MINOR    7
+#define LIBCONFIGXX_VER_REVISION 0
+
+struct config_t; // fwd decl
+struct config_setting_t; // fwd decl
+
+namespace libconfig {
+
+class LIBCONFIGXX_API ConfigException : public std::exception { };
+
+class Setting; // fwd decl
+class SettingIterator;
+class SettingConstIterator;
+
+class LIBCONFIGXX_API SettingException : public ConfigException
 {
+  public:
 
-#include <libconfig.h>
+  SettingException(const Setting &setting);
+  SettingException(const Setting &setting, int idx);
+  SettingException(const Setting &setting, const char *name);
+  SettingException(const char *path);
 
-  class LIBCONFIG_API ConfigException : public std::exception { };
+  SettingException(const SettingException &other);
+  SettingException& operator=(const SettingException &other);
 
-  class Setting; // fwd decl
+  virtual ~SettingException() throw();
 
-  class LIBCONFIG_API SettingException : public ConfigException
+  const char *getPath() const;
+
+  virtual const char *what() const throw();
+
+  private:
+
+  char *_path;
+};
+
+class LIBCONFIGXX_API SettingTypeException : public SettingException
+{
+  public:
+
+  SettingTypeException(const Setting &setting);
+  SettingTypeException(const Setting &setting, int idx);
+  SettingTypeException(const Setting &setting, const char *name);
+
+  virtual const char *what() const throw();
+};
+
+class LIBCONFIGXX_API SettingNotFoundException : public SettingException
+{
+  public:
+
+  SettingNotFoundException(const char *path);
+  SettingNotFoundException(const Setting &setting, int idx);
+  SettingNotFoundException(const Setting &setting, const char *name);
+
+  virtual const char *what() const throw();
+};
+
+class LIBCONFIGXX_API SettingNameException : public SettingException
+{
+  public:
+
+  SettingNameException(const Setting &setting, const char *name);
+
+  virtual const char *what() const throw();
+};
+
+class LIBCONFIGXX_API FileIOException : public ConfigException
+{
+  public:
+
+  virtual const char *what() const throw();
+};
+
+class LIBCONFIGXX_API ParseException : public ConfigException
+{
+  public:
+
+  ParseException(const char *file, int line, const char *error);
+
+  ParseException(const ParseException &other);
+
+  virtual ~ParseException() throw();
+
+  inline const char *getFile() const
+  { return(_file); }
+
+  inline int getLine() const
+  { return(_line); }
+
+  inline const char *getError() const
+  { return(_error); }
+
+  virtual const char *what() const throw();
+
+  private:
+
+  const char *_file;
+  int _line;
+  const char *_error;
+};
+
+class LIBCONFIGXX_API Setting
+{
+  friend class Config;
+
+  public:
+
+  enum Type
   {
-    friend class Config;
-
-    public:
-
-    SettingException(const SettingException &other);
-    SettingException& operator=(const SettingException &other);
-
-    virtual ~SettingException() throw();
-
-    const char *getPath() const;
-
-    virtual const char *what() const throw();
-
-    protected:
-
-    SettingException(const Setting &setting);
-    SettingException(const Setting &setting, int idx);
-    SettingException(const Setting &setting, const char *name);
-    SettingException(const char *path);
-
-    private:
-
-    char *_path;
+    TypeNone = 0,
+    // scalar types
+    TypeInt,
+    TypeInt64,
+    TypeFloat,
+    TypeString,
+    TypeBoolean,
+    // aggregate types
+    TypeGroup,
+    TypeArray,
+    TypeList
   };
 
-  class LIBCONFIG_API SettingTypeException : public SettingException
+  enum Format
   {
-    friend class Config;
-    friend class Setting;
-
-    const char *what() const throw();
-
-    private:
-
-    SettingTypeException(const Setting &setting);
-    SettingTypeException(const Setting &setting, int idx);
-    SettingTypeException(const Setting &setting, const char *name);
+    FormatDefault = 0,
+    FormatHex = 1
   };
 
-  class LIBCONFIG_API SettingNotFoundException : public SettingException
+  typedef SettingIterator iterator;
+  typedef SettingConstIterator const_iterator;
+
+  public:
+
+  virtual ~Setting();
+
+  inline Type getType() const { return(_type); }
+
+  inline Format getFormat() const { return(_format); }
+  void setFormat(Format format);
+
+  operator bool() const;
+  operator int16_t() const;
+  operator uint16_t() const;
+  operator int32_t() const;
+  operator uint32_t() const;
+  operator int64_t() const;
+  operator uint64_t() const;
+  operator double() const;
+  operator float() const;
+  operator const char *() const;
+  operator std::string() const;
+
+  inline const char *c_str() const
+  { return operator const char *(); }
+
+  Setting & operator=(bool value);
+  Setting & operator=(int value);
+  Setting & operator=(long value);
+  Setting & operator=(const long long &value);
+  Setting & operator=(const double &value);
+  Setting & operator=(float value);
+  Setting & operator=(const char *value);
+  Setting & operator=(const std::string &value);
+
+  Setting & lookup(const char *path) const;
+  inline Setting & lookup(const std::string &path) const
+  { return(lookup(path.c_str())); }
+
+  Setting & operator[](const char *name) const;
+
+  inline Setting & operator[](const std::string &name) const
+  { return(operator[](name.c_str())); }
+
+  Setting & operator[](int index) const;
+
+  bool lookupValue(const char *name, bool &value) const;
+  bool lookupValue(const char *name, int16_t &value) const;
+  bool lookupValue(const char *name, uint16_t &value) const;
+  bool lookupValue(const char *name, int32_t &value) const;
+  bool lookupValue(const char *name, uint32_t &value) const;
+  bool lookupValue(const char *name, int64_t &value) const;
+  bool lookupValue(const char *name, uint64_t &value) const;
+  bool lookupValue(const char *name, double &value) const;
+  bool lookupValue(const char *name, float &value) const;
+  bool lookupValue(const char *name, const char *&value) const;
+  bool lookupValue(const char *name, std::string &value) const;
+
+  inline bool lookupValue(const std::string &name, bool &value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  inline bool lookupValue(const std::string &name, int16_t &value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  inline bool lookupValue(const std::string &name, uint16_t &value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  inline bool lookupValue(const std::string &name, int32_t &value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  inline bool lookupValue(const std::string &name, uint32_t &value) const
+  { return(lookupValue(name.c_str(), value)); }
+  
+  inline bool lookupValue(const std::string &name, int64_t &value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  inline bool lookupValue(const std::string &name, uint64_t &value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  inline bool lookupValue(const std::string &name, double &value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  inline bool lookupValue(const std::string &name, float &value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  inline bool lookupValue(const std::string &name, const char *&value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  inline bool lookupValue(const std::string &name, std::string &value) const
+  { return(lookupValue(name.c_str(), value)); }
+
+  void remove(const char *name);
+
+  inline void remove(const std::string &name)
+  { remove(name.c_str()); }
+
+  void remove(unsigned int idx);
+
+  Setting & add(const char *name, Type type);
+
+  inline Setting & add(const std::string &name, Type type)
+  { return(add(name.c_str(), type)); }
+
+  Setting & add(Type type);
+
+  bool exists(const char *name) const;
+
+  inline bool exists(const std::string &name) const
+  { return(exists(name.c_str())); }
+
+  int getLength() const;
+  const char *getName() const;
+  std::string getPath() const;
+  int getIndex() const;
+
+  const Setting & getParent() const;
+  Setting & getParent();
+
+  bool isRoot() const;
+
+  inline bool isGroup() const
+  { return(_type == TypeGroup); }
+
+  inline bool isArray() const
+  { return(_type == TypeArray); }
+
+  inline bool isList() const
+  { return(_type == TypeList); }
+
+  inline bool isAggregate() const
+  { return(_type >= TypeGroup); }
+
+  inline bool isScalar() const
+  { return((_type > TypeNone) && (_type < TypeGroup)); }
+
+  inline bool isNumber() const
   {
-    friend class Config;
-    friend class Setting;
+    return((_type == TypeInt) || (_type == TypeInt64) || (_type == TypeFloat));
+  }
 
-    const char *what() const throw();
+  unsigned int getSourceLine() const;
+  const char *getSourceFile() const;
 
-    private:
+  iterator begin();
+  iterator end();
 
-    SettingNotFoundException(const Setting &setting, int idx);
-    SettingNotFoundException(const Setting &setting, const char *name);
-    SettingNotFoundException(const char *path);
+  const_iterator begin() const;
+  const_iterator end() const;
+
+  private:
+
+  config_setting_t *_setting;
+  Type _type;
+  Format _format;
+
+  Setting(config_setting_t *setting);
+
+  void assertType(Type type) const;
+  static Setting & wrapSetting(config_setting_t *setting);
+
+  Setting(const Setting& other); // not supported
+  Setting& operator=(const Setting& other); // not supported
+};
+
+
+class LIBCONFIGXX_API SettingIterator
+{
+  public:
+
+  SettingIterator(Setting &setting, bool endIterator = false);
+  SettingIterator(const SettingIterator &other);
+  SettingIterator& operator=(const SettingIterator &other);
+
+  // Equality comparison.
+  inline bool operator==(SettingIterator const &other) const
+  { return((_setting == other._setting) && (_idx == other._idx)); }
+
+  inline bool operator!=(SettingIterator const &other) const
+  { return(!operator==(other)); }
+
+  bool operator<(SettingIterator const &other) const;
+
+  // Dereference operators.
+  inline Setting & operator*()
+  { return((*_setting)[_idx]); }
+
+  inline Setting * operator->()
+  { return(&(*_setting)[_idx]); }
+
+  inline const Setting & operator*() const
+  { return(*_setting)[_idx]; }
+  inline const Setting * operator->() const
+  { return(&(*_setting)[_idx]); }
+
+  // Increment and decrement operators.
+  SettingIterator & operator++();
+  SettingIterator operator++(int);
+
+  SettingIterator & operator--();
+  SettingIterator operator--(int);
+
+  // Arithmetic operators.
+  SettingIterator operator+(int offset) const;
+  SettingIterator & operator+=(int offset);
+
+  SettingIterator operator-(int offset) const;
+  SettingIterator & operator-=(int offset);
+
+  int operator-(const SettingIterator &other) const;
+
+  private:
+
+  Setting *_setting;
+
+  int _count;
+  int _idx;
+};
+
+SettingIterator operator+(int offset, const SettingIterator &si);
+
+class LIBCONFIGXX_API SettingConstIterator
+{
+  public:
+
+  SettingConstIterator(const Setting &setting, bool endIterator = false);
+  SettingConstIterator(const SettingConstIterator &rhs);
+  SettingConstIterator& operator=(const SettingConstIterator &rhs);
+
+  // Equality comparison.
+  bool operator==(SettingConstIterator const &other) const
+  { return((_setting == other._setting) && (_idx == other._idx)); }
+
+  inline bool operator!=(SettingConstIterator const &other) const
+  { return(!operator==(other)); }
+
+  // Dereference operators.
+  inline Setting const & operator*()
+  { return((*_setting)[_idx]); }
+  inline Setting const * operator->()
+  { return(&(*_setting)[_idx]); }
+
+  inline const Setting& operator*() const
+  { return((*_setting)[_idx]); }
+  inline const Setting * operator->() const
+  { return(&(*_setting)[_idx]); }
+
+  // Increment and decrement operators.
+  SettingConstIterator & operator++();
+  SettingConstIterator operator++(int);
+
+  SettingConstIterator & operator--();
+  SettingConstIterator operator--(int);
+
+  // Arithmetic operators.
+  SettingConstIterator operator+(int offset) const;
+  SettingConstIterator & operator+=(int offset);
+
+  SettingConstIterator operator-(int offset) const;
+  SettingConstIterator & operator-=(int offset);
+
+  int operator-(const SettingConstIterator &other) const;
+
+  private:
+
+  const Setting *_setting;
+
+  int _count;
+  int _idx;
+};
+
+SettingConstIterator operator+(int offset, const SettingConstIterator &si);
+
+class LIBCONFIGXX_API Config
+{
+  public:
+
+  enum Option
+  {
+    OptionNone = 0,
+    OptionAutoConvert = 0x01,
+    OptionSemicolonSeparators = 0x02,
+    OptionColonAssignmentForGroups = 0x04,
+    OptionColonAssignmentForNonGroups = 0x08,
+    OptionOpenBraceOnSeparateLine = 0x10,
+    OptionAllowScientificNotation = 0x20,
+    OptionFsync = 0x40
   };
 
-  class LIBCONFIG_API SettingNameException : public SettingException
-  {
-    friend class Config;
-    friend class Setting;
+  Config();
+  virtual ~Config();
 
-    const char *what() const throw();
+  void clear();
 
-    private:
+  void setOptions(int options);
+  int getOptions() const;
 
-    SettingNameException(const Setting &setting, const char *name);
-  };
+  void setOption(Config::Option option, bool flag);
+  bool getOption(Config::Option option) const;
 
-  class LIBCONFIG_API FileIOException : public ConfigException
-  {
-    const char *what() const throw();
-  };
+  inline void setAutoConvert(bool flag)
+  { setOption(Config::OptionAutoConvert, flag); }
+  inline bool getAutoConvert() const
+  { return(getOption(Config::OptionAutoConvert)); }
 
-  class LIBCONFIG_API ParseException : public ConfigException
-  {
-    friend class Config;
+  void setDefaultFormat(Setting::Format format);
+  inline Setting::Format getDefaultFormat() const
+  { return(_defaultFormat); }
 
-    public:
+  void setTabWidth(unsigned short width);
+  unsigned short getTabWidth() const;
 
-    virtual ~ParseException() throw();
+  void setFloatPrecision(unsigned short digits);
+  unsigned short getFloatPrecision() const;
 
-    inline int getLine() throw()
-    { return(_line); }
+  void setIncludeDir(const char *includeDir);
+  const char *getIncludeDir() const;
 
-    inline const char *getError() throw()
-    { return(_error); }
-
-    const char *what() const throw();
-
-    private:
-
-    ParseException(int line, const char *error);
-
-    int _line;
-    const char *_error;
-  };
-
-  class LIBCONFIG_API Setting
-  {
-    friend class Config;
-
-    public:
-
-    enum Type
-    {
-      TypeNone = 0,
-      // scalar types
-      TypeInt,
-      TypeInt64,
-      TypeFloat,
-      TypeString,
-      TypeBoolean,
-      // aggregate types
-      TypeGroup,
-      TypeArray,
-      TypeList
-    };
-
-    enum Format
-    {
-      FormatDefault = 0,
-      FormatHex = 1
-    };
-
-    private:
-
-    config_setting_t *_setting;
-    Type _type;
-    Format _format;
-
-    Setting(config_setting_t *setting);
-
-    void assertType(Type type) const
-      throw(SettingTypeException);
-    static Setting & wrapSetting(config_setting_t *setting);
-
-    Setting(const Setting& other); // not supported
-    Setting& operator=(const Setting& other); // not supported
-
-    public:
-
-    virtual ~Setting() throw();
-
-    inline Type getType() const throw() { return(_type); }
-
-    inline Format getFormat() const throw() { return(_format); }
-    void setFormat(Format format) throw();
-
-    operator bool() const throw(SettingTypeException);
-    operator long() const throw(SettingTypeException);
-    operator unsigned long() const throw(SettingTypeException);
-    operator int() const throw(SettingTypeException);
-    operator unsigned int() const throw(SettingTypeException);
-    operator long long() const throw(SettingTypeException);
-    operator unsigned long long() const throw(SettingTypeException);
-    operator double() const throw(SettingTypeException);
-    operator float() const throw(SettingTypeException);
-    operator const char *() const throw(SettingTypeException);
-    operator std::string() const throw(SettingTypeException);
-
-    Setting & operator=(bool value) throw(SettingTypeException);
-    Setting & operator=(long value) throw(SettingTypeException);
-    Setting & operator=(int value) throw(SettingTypeException);
-    Setting & operator=(const long long &value) throw(SettingTypeException);
-    Setting & operator=(const double &value) throw(SettingTypeException);
-    Setting & operator=(float value) throw(SettingTypeException);
-    Setting & operator=(const char *value) throw(SettingTypeException);
-    Setting & operator=(const std::string &value) throw(SettingTypeException);
-
-    Setting & operator[](const char * key) const
-      throw(SettingTypeException, SettingNotFoundException);
-
-    inline Setting & operator[](const std::string & key) const
-      throw(SettingTypeException, SettingNotFoundException)
-    { return(operator[](key.c_str())); }
+  virtual const char **evaluateIncludePath(const char *path,
+                                           const char **error);
 
-    Setting & operator[](int index) const
-      throw(SettingTypeException, SettingNotFoundException);
+  void read(FILE *stream);
+  void write(FILE *stream) const;
 
-    bool lookupValue(const char *name, bool &value) const throw();
-    bool lookupValue(const char *name, long &value) const throw();
-    bool lookupValue(const char *name, unsigned long &value) const throw();
-    bool lookupValue(const char *name, int &value) const throw();
-    bool lookupValue(const char *name, unsigned int &value) const throw();
-    bool lookupValue(const char *name, long long &value) const throw();
-    bool lookupValue(const char *name, unsigned long long &value)
-      const throw();
-    bool lookupValue(const char *name, double &value) const throw();
-    bool lookupValue(const char *name, float &value) const throw();
-    bool lookupValue(const char *name, const char *&value) const throw();
-    bool lookupValue(const char *name, std::string &value) const throw();
+  void readString(const char *str);
+  inline void readString(const std::string &str)
+  { return(readString(str.c_str())); }
 
-    inline bool lookupValue(const std::string &name, bool &value)
-      const throw()
-    { return(lookupValue(name.c_str(), value)); }
+  void readFile(const char *filename);
+  void writeFile(const char *filename);
 
-    inline bool lookupValue(const std::string &name, long &value)
-      const throw()
-    { return(lookupValue(name.c_str(), value)); }
+  Setting & lookup(const char *path) const;
+  inline Setting & lookup(const std::string &path) const
+  { return(lookup(path.c_str())); }
 
-    inline bool lookupValue(const std::string &name, unsigned long &value)
-      const throw()
-    { return(lookupValue(name.c_str(), value)); }
+  bool exists(const char *path) const;
+  inline bool exists(const std::string &path) const
+  { return(exists(path.c_str())); }
 
-    inline bool lookupValue(const std::string &name, int &value) const throw()
-    { return(lookupValue(name.c_str(), value)); }
+  bool lookupValue(const char *path, bool &value) const;
+  bool lookupValue(const char *path, int16_t &value) const;
+  bool lookupValue(const char *path, uint16_t &value) const;
+  bool lookupValue(const char *path, int32_t &value) const;
+  bool lookupValue(const char *path, uint32_t &value) const;
+  bool lookupValue(const char *path, int64_t &value) const;
+  bool lookupValue(const char *path, uint64_t &value) const;
+  bool lookupValue(const char *path, double &value) const;
+  bool lookupValue(const char *path, float &value) const;
+  bool lookupValue(const char *path, const char *&value) const;
+  bool lookupValue(const char *path, std::string &value) const;
 
-    inline bool lookupValue(const std::string &name, unsigned int &value)
-      const throw()
-    { return(lookupValue(name.c_str(), value)); }
+  inline bool lookupValue(const std::string &path, bool &value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    inline bool lookupValue(const std::string &name, long long &value)
-      const throw()
-    { return(lookupValue(name.c_str(), value)); }
+  inline bool lookupValue(const std::string &path, int16_t &value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    inline bool lookupValue(const std::string &name,
-                            unsigned long long &value) const throw()
-    { return(lookupValue(name.c_str(), value)); }
+  inline bool lookupValue(const std::string &path, uint16_t &value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    inline bool lookupValue(const std::string &name, double &value) const
-      throw()
-    { return(lookupValue(name.c_str(), value)); }
+  inline bool lookupValue(const std::string &path, int32_t &value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    inline bool lookupValue(const std::string &name, float &value) const
-      throw()
-    { return(lookupValue(name.c_str(), value)); }
+  inline bool lookupValue(const std::string &path, uint32_t &value) const
+  { return(lookupValue(path.c_str(), value)); }
+  
+  inline bool lookupValue(const std::string &path, int64_t &value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    inline bool lookupValue(const std::string &name, const char *&value) const
-      throw()
-    { return(lookupValue(name.c_str(), value)); }
+  inline bool lookupValue(const std::string &path, uint64_t &value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    inline bool lookupValue(const std::string &name, std::string &value) const
-      throw()
-    { return(lookupValue(name.c_str(), value)); }
+  inline bool lookupValue(const std::string &path, double &value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    void remove(const char *name)
-      throw(SettingTypeException, SettingNotFoundException);
+  inline bool lookupValue(const std::string &path, float &value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    inline void remove(const std::string & name)
-      throw(SettingTypeException, SettingNotFoundException)
-    { remove(name.c_str()); }
+  inline bool lookupValue(const std::string &path, const char *&value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    void remove(unsigned int idx)
-      throw(SettingTypeException, SettingNotFoundException);
+  inline bool lookupValue(const std::string &path, std::string &value) const
+  { return(lookupValue(path.c_str(), value)); }
 
-    inline Setting & add(const std::string & name, Type type)
-      throw(SettingNameException, SettingTypeException)
-    { return(add(name.c_str(), type)); }
+  Setting & getRoot() const;
 
-    Setting & add(const char *name, Type type)
-      throw(SettingNameException, SettingTypeException);
+  private:
 
-    Setting & add(Type type) throw(SettingTypeException);
+  static void ConfigDestructor(void *arg);
+  void handleError() const;
 
-    inline bool exists(const std::string & name) const throw()
-    { return(exists(name.c_str())); }
+  config_t *_config;
+  Setting::Format _defaultFormat;
 
-    bool exists(const char *name) const throw();
-
-    int getLength() const throw();
-    const char *getName() const throw();
-    std::string getPath() const;
-    int getIndex() const throw();
-
-    const Setting & getParent() const throw(SettingNotFoundException);
-    Setting & getParent() throw(SettingNotFoundException);
-
-    bool isRoot() const throw();
-
-    inline bool isGroup() const throw()
-    { return(_type == TypeGroup); }
-
-    inline bool isArray() const throw()
-    { return(_type == TypeArray); }
-
-    inline bool isList() const throw()
-    { return(_type == TypeList); }
-
-    inline bool isAggregate() const throw()
-    { return(_type >= TypeGroup); }
-
-    inline bool isScalar() const throw()
-    { return((_type > TypeNone) && (_type < TypeGroup)); }
-
-    inline bool isNumber() const throw()
-    { return((_type == TypeInt) || (_type == TypeInt64)
-             || (_type == TypeFloat)); }
-
-    inline unsigned int getSourceLine() const throw()
-    { return(config_setting_source_line(_setting)); }
-  };
-
-  class LIBCONFIG_API Config
-  {
-    private:
-
-    config_t _config;
-
-    static void ConfigDestructor(void *arg);
-    Config(const Config& other); // not supported
-    Config& operator=(const Config& other); // not supported
-
-    public:
-
-    Config();
-    virtual ~Config();
-
-    void setAutoConvert(bool flag);
-    bool getAutoConvert() const;
-
-    void read(FILE *stream) throw(ParseException);
-    void write(FILE *stream) const;
-
-    void readFile(const char *filename) throw(FileIOException, ParseException);
-    void writeFile(const char *filename) throw(FileIOException);
-
-    inline Setting & lookup(const std::string &path) const
-      throw(SettingNotFoundException)
-    { return(lookup(path.c_str())); }
-
-    Setting & lookup(const char *path) const throw(SettingNotFoundException);
-
-    inline bool exists(const std::string & path) const throw()
-    { return(exists(path.c_str())); }
-
-    bool exists(const char *path) const throw();
-
-    bool lookupValue(const char *path, bool &value) const throw();
-    bool lookupValue(const char *path, long &value) const throw();
-    bool lookupValue(const char *path, unsigned long &value) const throw();
-    bool lookupValue(const char *path, int &value) const throw();
-    bool lookupValue(const char *path, unsigned int &value) const throw();
-    bool lookupValue(const char *path, long long &value) const throw();
-    bool lookupValue(const char *path, unsigned long long &value)
-      const throw();
-    bool lookupValue(const char *path, double &value) const throw();
-    bool lookupValue(const char *path, float &value) const throw();
-    bool lookupValue(const char *path, const char *&value) const throw();
-    bool lookupValue(const char *path, std::string &value) const throw();
-
-    inline bool lookupValue(const std::string &path, bool &value) const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path, long &value) const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path, unsigned long &value)
-      const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path, int &value) const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path, unsigned int &value)
-      const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path, long long &value)
-      const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path,
-                            unsigned long long &value) const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path, double &value)
-      const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path, float &value)
-      const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path, const char *&value)
-      const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    inline bool lookupValue(const std::string &path, std::string &value)
-      const throw()
-    { return(lookupValue(path.c_str(), value)); }
-
-    Setting & getRoot() const;
-  };
+  Config(const Config& other); // not supported
+  Config& operator=(const Config& other); // not supported
+};
 
 } // namespace libconfig
 
