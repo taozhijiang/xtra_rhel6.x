@@ -1,4 +1,8 @@
-### 目前包含的库及其版本：   
+***注意***：本库后续将不再维护更新了，基于RHEL6.x环境开发程序太痛苦了。其实在RHEL7.x上面开发(full support c++11)，编译打包后在RHEL6.x上面部署应该也是可以的，尽量完成静态连接避免动态链接库的版本不兼容问题。   
+后续请关注[xtra_rhel7.x](https://github.com/taozhijiang/xtra_rhel7.x)，该库将会积极维护。   
+
+***目前包含的库及其版本***   
+
 
 boost           1.60.0   
    
@@ -29,3 +33,6 @@ cpputest        3.8
 libconfig       1.7.2  
 librabbitmq     0.5.2   
 libiconv        1.15
+
+
+2019-11-16 End.

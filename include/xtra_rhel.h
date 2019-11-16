@@ -93,13 +93,17 @@ T * get_pointer(std::shared_ptr<T> const& p) {
 template <typename T>
 inline void ignore_unused(T const&) {}
 
+#ifndef __noncopyable__
 #define __noncopyable__(class_name) \
     private:\
     class_name(const class_name&) = delete;\
     class_name& operator=(const class_name&) = delete;
+#endif
 
+#ifndef __auto_lock__
 #define __auto_lock__(lock_name) \
     std::lock_guard<std::mutex> __lock_##__FILE__##__LINE__ (lock_name);
+#endif
 
 // define these for RHEL-6.x
 #define __XTRA_RHEL_VERSION__ 6
